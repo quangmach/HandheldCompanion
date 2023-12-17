@@ -11,7 +11,7 @@ using System;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
+using System.Windows.Navigation;
 
 using Page = System.Windows.Controls.Page;
 
@@ -26,7 +26,7 @@ public partial class QuickProfilesPage : Page
     private readonly Timer UpdateTimer;
     private ProcessEx currentProcess;
     private Profile currentProfile;
-
+    private bool IsOnBatteryPage;
     private LockObject updateLock = new();
 
     private Hotkey GyroHotkey = new(61);
@@ -41,6 +41,8 @@ public partial class QuickProfilesPage : Page
     {
         InitializeComponent();
 
+        //Triggered When Showed up or Closed
+        this.IsVisibleChanged += OnVisibleChanged;
         ProcessManager.ForegroundChanged += ProcessManager_ForegroundChanged;
 
         ProfileManager.Applied += ProfileApplied;
@@ -262,7 +264,6 @@ public partial class QuickProfilesPage : Page
     private void HotkeysManager_CommandExecuted(string listener)
     {
         // UI thread (async)
-        bool PluggedInStatus = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
         Application.Current.Dispatcher.BeginInvoke(() =>
         {
             switch (listener)
@@ -271,16 +272,14 @@ public partial class QuickProfilesPage : Page
                     {
                         if (currentProfile is null || !currentProfile.TDPOverrideEnabled)
                             return;
-                        if(!PluggedInStatus && currentProfile.TDPOnBatteryEnabled) TDPOnBatterySlider.Value++;
-                        else TDPSlider.Value++;
+                        TDPSlider.Value++;
                     }
                     break;
                 case "decreaseTDP":
                     {
                         if (currentProfile is null || !currentProfile.TDPOverrideEnabled)
                             return;
-                        if (!PluggedInStatus && currentProfile.TDPOnBatteryEnabled) TDPOnBatterySlider.Value--;
-                        else TDPSlider.Value--;
+                        TDPSlider.Value--;
                     }
                     break;
             }
@@ -299,7 +298,6 @@ public partial class QuickProfilesPage : Page
                         using (new ScopedLock(updateLock))
                         {
                             TDPSlider.Minimum = (double)value;
-                            TDPOnBatterySlider.Minimum = (double)value;
                         }
                     }
                     break;
@@ -308,7 +306,6 @@ public partial class QuickProfilesPage : Page
                         using (new ScopedLock(updateLock))
                         {
                             TDPSlider.Maximum = (double)value;
-                            TDPOnBatterySlider.Maximum = (double)value;
                         }
                     }
                     break;
@@ -384,43 +381,79 @@ public partial class QuickProfilesPage : Page
                         GyroHotkey.DrawInput();
                     }
 
-                    // TDP
-                    TDPToggle.IsOn = currentProfile.TDPOverrideEnabled;
-                    var TDP = currentProfile.TDPOverrideValues is not null
-                        ? currentProfile.TDPOverrideValues
-                        : MainWindow.CurrentDevice.nTDP;
-                    TDPSlider.Value = TDP[(int)PowerType.Slow];
+                    PowerProfilesToggle.IsOn = currentProfile.PowerProfilesEnabled;
 
-                    // TDP On Battery
-                    TDPOnBatteryToggle.IsOn = currentProfile.TDPOnBatteryEnabled;
-                    var TDPOnBattery = currentProfile.TDPOnBatteryValues is not null
-                        ? currentProfile.TDPOnBatteryValues
-                        : MainWindow.CurrentDevice.nTDP;
-                    TDPOnBatterySlider.Value = TDPOnBattery[(int)PowerType.Slow];
+                    // Check If Use Separated Power Profiles & On Battery Page Settings
+                    IsOnBatteryPage = navBatterybtn.IsChecked == true && PowerProfilesToggle.IsOn;
 
-                    // GPU
-                    GPUToggle.IsOn = currentProfile.GPUOverrideEnabled;
-                    GPUSlider.Value = currentProfile.GPUOverrideValue != 0 ? currentProfile.GPUOverrideValue : 255 * 50;
+                    // If On Plugged In Settings Page
+                    if (!IsOnBatteryPage)
+                    {
+                        // TDP
+                        TDPToggle.IsOn = currentProfile.TDPOverrideEnabled;
+                        var TDP = currentProfile.TDPOverrideValues is not null
+                            ? currentProfile.TDPOverrideValues
+                            : MainWindow.CurrentDevice.nTDP;
+                        TDPSlider.Value = TDP[(int)PowerType.Slow];
 
-                    // Framerate
-                    FramerateToggle.IsOn = currentProfile.FramerateEnabled;
-                    FramerateSlider.Value = currentProfile.FramerateValue;
+                        // GPU
+                        GPUToggle.IsOn = currentProfile.GPUOverrideEnabled;
+                        GPUSlider.Value = currentProfile.GPUOverrideValue != 0 ? currentProfile.GPUOverrideValue : 255 * 50;
 
-                    // AutoTDP
-                    AutoTDPToggle.IsOn = currentProfile.AutoTDPEnabled;
-                    AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS;
+                        // Framerate
+                        FramerateToggle.IsOn = currentProfile.FramerateEnabled;
+                        FramerateSlider.Value = currentProfile.FramerateValue;
 
-                    // EPP
-                    EPPToggle.IsOn = currentProfile.EPPOverrideEnabled;
-                    EPPSlider.Value = currentProfile.EPPOverrideValue;
+                        // AutoTDP
+                        AutoTDPToggle.IsOn = currentProfile.AutoTDPEnabled;
+                        AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS;
 
-                    // RSR
-                    RSRToggle.IsOn = currentProfile.RSREnabled;
-                    RSRSlider.Value = currentProfile.RSRSharpness;
+                        // EPP
+                        EPPToggle.IsOn = currentProfile.EPPOverrideEnabled;
+                        EPPSlider.Value = currentProfile.EPPOverrideValue;
 
-                    // CPU Core Count
-                    CPUCoreToggle.IsOn = currentProfile.CPUCoreEnabled;
-                    CPUCoreSlider.Value = currentProfile.CPUCoreCount;
+                        // RSR
+                        RSRToggle.IsOn = currentProfile.RSREnabled;
+                        RSRSlider.Value = currentProfile.RSRSharpness;
+
+                        // CPU Core Count
+                        CPUCoreToggle.IsOn = currentProfile.CPUCoreEnabled;
+                        CPUCoreSlider.Value = currentProfile.CPUCoreCount;
+                    } 
+                    // On Battery Settings Page
+                    else
+                    {
+                        // TDP
+                        TDPToggle.IsOn = currentProfile.TDPOverrideEnabled_OnBattery;
+                        var TDP = currentProfile.TDPOverrideValues_OnBattery is not null
+                            ? currentProfile.TDPOverrideValues_OnBattery
+                            : MainWindow.CurrentDevice.nTDP;
+                        TDPSlider.Value = TDP[(int)PowerType.Slow];
+
+                        // GPU
+                        GPUToggle.IsOn = currentProfile.GPUOverrideEnabled_OnBattery;
+                        GPUSlider.Value = currentProfile.GPUOverrideValue_OnBattery != 0 ? currentProfile.GPUOverrideValue_OnBattery : 255 * 50;
+
+                        // Framerate
+                        FramerateToggle.IsOn = currentProfile.FramerateEnabled_OnBattery;
+                        FramerateSlider.Value = currentProfile.FramerateValue_OnBattery;
+
+                        // AutoTDP
+                        AutoTDPToggle.IsOn = currentProfile.AutoTDPEnabled_OnBattery;
+                        AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS_OnBattery;
+
+                        // EPP
+                        EPPToggle.IsOn = currentProfile.EPPOverrideEnabled_OnBattery;
+                        EPPSlider.Value = currentProfile.EPPOverrideValue_OnBattery;
+
+                        // RSR
+                        RSRToggle.IsOn = currentProfile.RSREnabled_OnBattery;
+                        RSRSlider.Value = currentProfile.RSRSharpness_OnBattery;
+
+                        // CPU Core Count
+                        CPUCoreToggle.IsOn = currentProfile.CPUCoreEnabled_OnBattery;
+                        CPUCoreSlider.Value = currentProfile.CPUCoreCount_OnBattery;
+                    }
                 }
             });
         }
@@ -499,7 +532,6 @@ public partial class QuickProfilesPage : Page
         currentProfile.Layout = (ProfileManager.GetProfileWithDefaultLayout()?.Layout ?? LayoutTemplate.DefaultLayout.Layout).Clone() as Layout;
         currentProfile.LayoutTitle = LayoutTemplate.DesktopLayout.Name;
         currentProfile.TDPOverrideValues = MainWindow.CurrentDevice.nTDP;
-        currentProfile.TDPOnBatteryValues = MainWindow.CurrentDevice.nTDP;
 
         // if an update is pending, execute it and stop timer
         if (UpdateTimer.Enabled)
@@ -572,6 +604,19 @@ public partial class QuickProfilesPage : Page
 
         RequestUpdate();
     }
+    private void PowerProfilesToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (currentProfile is null)
+            return;
+
+        if (updateLock)
+            return;
+
+        //Revert to Default Page when Power Profiles Off
+        if (!PowerProfilesToggle.IsOn) navPowerbtn.IsChecked = true;
+        currentProfile.PowerProfilesEnabled = PowerProfilesToggle.IsOn;
+        RequestUpdate();
+    }
 
     private void TDPToggle_Toggled(object sender, RoutedEventArgs e)
     {
@@ -581,6 +626,7 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
+        if(IsOnBatteryPage) currentProfile.TDPOverrideEnabled_OnBattery = TDPToggle.IsOn;
         currentProfile.TDPOverrideEnabled = TDPToggle.IsOn;
         RequestUpdate();
     }
@@ -593,40 +639,15 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.TDPOverrideValues = new double[3]
+        var TDPOverrideValues = new double[3]
         {
                 (int)TDPSlider.Value,
                 (int)TDPSlider.Value,
                 (int)TDPSlider.Value
         };
-        RequestUpdate();
-    }
-    private void TDPOnBatteryToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (currentProfile is null)
-            return;
 
-        if (updateLock)
-            return;
-
-        currentProfile.TDPOnBatteryEnabled = TDPOnBatteryToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void TDPOnBatterySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (currentProfile is null)
-            return;
-
-        if (updateLock)
-            return;
-
-        currentProfile.TDPOnBatteryValues = new double[3]
-        {
-                (int)TDPOnBatterySlider.Value,
-                (int)TDPOnBatterySlider.Value,
-                (int)TDPOnBatterySlider.Value
-        };
+        if (IsOnBatteryPage) currentProfile.TDPOverrideValues_OnBattery = TDPOverrideValues;
+        else currentProfile.TDPOverrideValues = TDPOverrideValues;
         RequestUpdate();
     }
 
@@ -638,9 +659,16 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.AutoTDPEnabled = AutoTDPToggle.IsOn;
-        AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS;
-
+        if (IsOnBatteryPage)
+        {
+            currentProfile.AutoTDPEnabled_OnBattery = AutoTDPToggle.IsOn;
+            AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS_OnBattery;
+        }
+        else 
+        {
+            currentProfile.AutoTDPEnabled = AutoTDPToggle.IsOn;
+            AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS;
+        }
         RequestUpdate();
     }
 
@@ -652,7 +680,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.AutoTDPRequestedFPS = (int)AutoTDPRequestedFPSSlider.Value;
+        if (IsOnBatteryPage) currentProfile.AutoTDPRequestedFPS_OnBattery = (int)AutoTDPRequestedFPSSlider.Value;
+        else currentProfile.AutoTDPRequestedFPS = (int)AutoTDPRequestedFPSSlider.Value;
         RequestUpdate();
     }
 
@@ -775,7 +804,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.GPUOverrideEnabled = GPUToggle.IsOn;
+        if(IsOnBatteryPage) currentProfile.GPUOverrideEnabled_OnBattery = GPUToggle.IsOn;
+        else currentProfile.GPUOverrideEnabled = GPUToggle.IsOn;
         RequestUpdate();
     }
 
@@ -787,7 +817,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.GPUOverrideValue = (int)GPUSlider.Value;
+        if (IsOnBatteryPage) currentProfile.GPUOverrideValue_OnBattery = (int)GPUSlider.Value;
+        else currentProfile.GPUOverrideValue = (int)GPUSlider.Value;
         RequestUpdate();
     }
 
@@ -818,7 +849,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.FramerateEnabled = FramerateToggle.IsOn;
+        if (IsOnBatteryPage) currentProfile.FramerateEnabled_OnBattery = FramerateToggle.IsOn;
+        else currentProfile.FramerateEnabled = FramerateToggle.IsOn;
         RequestUpdate();
     }
 
@@ -846,8 +878,8 @@ public partial class QuickProfilesPage : Page
 
         if (updateLock)
             return;
-
-        currentProfile.FramerateValue = (int)FramerateSlider.Value;
+        if(IsOnBatteryPage) currentProfile.FramerateValue_OnBattery = (int)FramerateSlider.Value;
+        else currentProfile.FramerateValue = (int)FramerateSlider.Value;
         RequestUpdate();
     }
 
@@ -859,7 +891,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.EPPOverrideEnabled = EPPToggle.IsOn;
+        if (IsOnBatteryPage) currentProfile.EPPOverrideEnabled_OnBattery = EPPToggle.IsOn;
+        else currentProfile.EPPOverrideEnabled = EPPToggle.IsOn;
         RequestUpdate();
     }
 
@@ -871,7 +904,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.EPPOverrideValue = (uint)EPPSlider.Value;
+        if (IsOnBatteryPage) currentProfile.EPPOverrideValue_OnBattery = (uint)EPPSlider.Value;
+        else currentProfile.EPPOverrideValue = (uint)EPPSlider.Value;
         RequestUpdate();
     }
 
@@ -883,8 +917,9 @@ public partial class QuickProfilesPage : Page
         // wait until lock is released
         if (updateLock)
             return;
-
-        currentProfile.RSREnabled = RSRToggle.IsOn;
+        
+        if(IsOnBatteryPage) currentProfile.RSREnabled_OnBattery = RSRToggle.IsOn;
+        else currentProfile.RSREnabled = RSRToggle.IsOn;
         RequestUpdate();
     }
 
@@ -900,7 +935,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.RSRSharpness = (int)RSRSlider.Value;
+        if(IsOnBatteryPage) currentProfile.RSRSharpness_OnBattery = (int)RSRSlider.Value;
+        else currentProfile.RSRSharpness = (int)RSRSlider.Value;
         RequestUpdate();
     }
 
@@ -913,7 +949,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.CPUCoreEnabled = CPUCoreToggle.IsOn;
+        if(IsOnBatteryPage) currentProfile.CPUCoreEnabled_OnBattery = CPUCoreToggle.IsOn;
+        else currentProfile.CPUCoreEnabled = CPUCoreToggle.IsOn;
         RequestUpdate();
     }
 
@@ -929,7 +966,8 @@ public partial class QuickProfilesPage : Page
         if (updateLock)
             return;
 
-        currentProfile.CPUCoreCount = (int)CPUCoreSlider.Value;
+        if(IsOnBatteryPage) currentProfile.CPUCoreCount_OnBattery = (int)CPUCoreSlider.Value;
+        else currentProfile.CPUCoreCount = (int)CPUCoreSlider.Value;
         RequestUpdate();
     }
 
@@ -944,5 +982,17 @@ public partial class QuickProfilesPage : Page
 
         currentProfile.LayoutEnabled = Toggle_ControllerLayout.IsOn;
         RequestUpdate();
+    }
+
+    private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        // Select default page based on current Power Status
+        if (PowerProfilesToggle.IsOn && !PowerProfileStatus.isPluggedIn) navBatterybtn.IsChecked = true;
+        else navPowerbtn.IsChecked = true;
+    }
+
+    private void navPowerProfilebtn_Click(object sender, RoutedEventArgs e)
+    {
+        ProfileManager.UpdateOrCreateProfile(currentProfile);
     }
 }

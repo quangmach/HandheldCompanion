@@ -145,11 +145,15 @@ public class RTSS : IPlatform
 
     private void ProfileManager_Applied(Profile profile, ProfileUpdateSource source)
     {
+        bool isUsingBatteryProfile = profile.PowerProfilesEnabled && !PowerProfileStatus.isPluggedIn;
+        bool FramerateEnabled = isUsingBatteryProfile ? profile.FramerateEnabled_OnBattery : profile.FramerateEnabled;
+        int FramerateValue = isUsingBatteryProfile? profile.FramerateValue_OnBattery : profile.FramerateValue;
+
         // apply profile defined framerate
-        if (profile.FramerateEnabled)
+        if (FramerateEnabled)
         {
             var frequency = (int)Math.Floor(SystemManager.GetDesktopScreen().GetFrequency()
-                .GetValue((Frequency)profile.FramerateValue));
+                .GetValue((Frequency)FramerateValue));
             RequestFPS(frequency);
         }
         else

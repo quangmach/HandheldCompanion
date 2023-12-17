@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using Timer = System.Timers.Timer;
 
 namespace HandheldCompanion.Managers;
@@ -32,6 +33,11 @@ public static class PowerMode
     ///     Best Performance mode.
     /// </summary>
     public static Guid BestPerformance = new("ded574b5-45a0-4f42-8737-46345c09c238");
+}
+
+public static class PowerProfileStatus
+{
+    public static bool isPluggedIn = true;
 }
 
 public class PerformanceManager : Manager
@@ -103,6 +109,7 @@ public class PerformanceManager : Manager
         autoWatchdog.Elapsed += AutoTDPWatchdog_Elapsed;
 
         // Monitor Power Status
+        PowerProfileStatus.isPluggedIn = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
         SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
 
         ProfileManager.Applied += ProfileManager_Applied;
@@ -124,6 +131,7 @@ public class PerformanceManager : Manager
     private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
         ProfilesPage.RequestUpdate();
+        PowerProfileStatus.isPluggedIn = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
     }
 
     private void SettingsManagerOnSettingValueChanged(string name, object value)
@@ -148,16 +156,31 @@ public class PerformanceManager : Manager
 
     private void ProfileManager_Applied(Profile profile, ProfileUpdateSource source)
     {
-        // apply profile defined TDP
-        if (profile.TDPOverrideEnabled && profile.TDPOverrideValues is not null)
-        {
-            double[] TDPOverrideValues;
-            // Check if using TDP on Battery & is not Plugged in
-            bool PluggedInStatus = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-            if (profile.TDPOnBatteryEnabled && profile.TDPOnBatteryValues is not null && !PluggedInStatus) TDPOverrideValues = profile.TDPOnBatteryValues;
-            else TDPOverrideValues = profile.TDPOverrideValues;
+        // Switch profile value based on if Power Profile On & On Battery
+        bool isUsingBatteryProfile = profile.PowerProfilesEnabled && !PowerProfileStatus.isPluggedIn;
 
-            if (!profile.AutoTDPEnabled)
+        bool TDPOverrideEnabled = isUsingBatteryProfile ? profile.TDPOverrideEnabled_OnBattery : profile.TDPOverrideEnabled;
+        double[] TDPOverrideValues = isUsingBatteryProfile ? profile.TDPOverrideValues_OnBattery : profile.TDPOverrideValues;
+
+        bool AutoTDPEnabled = isUsingBatteryProfile ? profile.AutoTDPEnabled_OnBattery : profile.AutoTDPEnabled;
+        float AutoTDPRequestedFPS = isUsingBatteryProfile ? profile.AutoTDPRequestedFPS_OnBattery : profile.AutoTDPRequestedFPS;
+
+        bool GPUOverrideEnabled = isUsingBatteryProfile ? profile.GPUOverrideEnabled_OnBattery : profile.GPUOverrideEnabled;
+        double GPUOverrideValue = isUsingBatteryProfile ? profile.GPUOverrideValue_OnBattery : profile.GPUOverrideValue;
+
+        bool EPPOverrideEnabled = isUsingBatteryProfile ? profile.EPPOverrideEnabled_OnBattery : profile.EPPOverrideEnabled;
+        uint EPPOverrideValue = isUsingBatteryProfile ? profile.EPPOverrideValue_OnBattery : profile.EPPOverrideValue;
+
+        bool CPUCoreEnabled = isUsingBatteryProfile ? profile.CPUCoreEnabled_OnBattery : profile.CPUCoreEnabled;
+        int CPUCoreCount = isUsingBatteryProfile ? profile.CPUCoreCount_OnBattery : profile.CPUCoreCount;
+
+        bool RSREnabled = isUsingBatteryProfile ? profile.RSREnabled_OnBattery : profile.RSREnabled;
+        int RSRSharpness = isUsingBatteryProfile ? profile.RSRSharpness_OnBattery : profile.RSRSharpness;
+
+        // apply profile defined TDP
+        if (TDPOverrideEnabled && TDPOverrideValues is not null)
+        {
+            if (!AutoTDPEnabled)
             {
                 // Manual TDP is set, use it and set max limit
                 RequestTDP(TDPOverrideValues);
@@ -176,7 +199,7 @@ public class PerformanceManager : Manager
         {
             StopTDPWatchdog(true);
 
-            if (!profile.AutoTDPEnabled)
+            if (!AutoTDPEnabled)
             {
                 // Neither manual TDP nor AutoTDP is enabled, restore default TDP
                 RestoreTDP(true);
@@ -189,9 +212,9 @@ public class PerformanceManager : Manager
         }
 
         // apply profile defined AutoTDP
-        if (profile.AutoTDPEnabled)
+        if (AutoTDPEnabled)
         {
-            AutoTDPTargetFPS = profile.AutoTDPRequestedFPS;
+            AutoTDPTargetFPS = AutoTDPRequestedFPS;
             StartAutoTDPWatchdog();
         }
         else if (autoWatchdog.Enabled)
@@ -199,14 +222,14 @@ public class PerformanceManager : Manager
             StopAutoTDPWatchdog(true);
 
             // restore default TDP (if not manual TDP is enabled)
-            if (!profile.TDPOverrideEnabled)
+            if (!TDPOverrideEnabled)
                 RestoreTDP(true);
         }
 
         // apply profile defined GPU
-        if (profile.GPUOverrideEnabled)
+        if (GPUOverrideEnabled)
         {
-            RequestGPUClock(profile.GPUOverrideValue);
+            RequestGPUClock(GPUOverrideValue);
             StartGPUWatchdog();
         }
         else if (gfxWatchdog.Enabled)
@@ -217,9 +240,9 @@ public class PerformanceManager : Manager
         }
 
         // apply profile defined EPP
-        if (profile.EPPOverrideEnabled)
+        if (EPPOverrideEnabled)
         {
-            RequestEPP(profile.EPPOverrideValue);
+            RequestEPP(EPPOverrideValue);
         }
         else if (currentEPP != 0x00000032)
         {
@@ -228,9 +251,9 @@ public class PerformanceManager : Manager
         }
 
         // apply profile defined CPU Core Count
-        if (profile.CPUCoreEnabled)
+        if (CPUCoreEnabled)
         {
-            RequestCPUCoreCount(profile.CPUCoreCount);
+            RequestCPUCoreCount(CPUCoreCount);
         }
         else if (currentCoreCount != Environment.ProcessorCount)
         {
@@ -241,10 +264,10 @@ public class PerformanceManager : Manager
         // apply profile define RSR
         try
         {
-            if (profile.RSREnabled)
+            if (RSREnabled)
             {
                 ADLXBackend.SetRSR(true);
-                ADLXBackend.SetRSRSharpness(profile.RSRSharpness);
+                ADLXBackend.SetRSRSharpness(RSRSharpness);
             }
             else if (ADLXBackend.GetRSRState() == 1)
             {

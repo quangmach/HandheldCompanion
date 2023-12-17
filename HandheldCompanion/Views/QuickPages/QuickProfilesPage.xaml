@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:resx="clr-namespace:HandheldCompanion.Properties"
-    xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+    xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern" xmlns:local="clr-namespace:HandheldCompanion.Utils"
     Title="Profiles"
     Margin="15,0,0,0"
     d:Background="White"
@@ -94,8 +94,81 @@
                 </Grid>
             </Border>
         </Grid>
+        <Grid Name="StackPowerProfileToggle">
+            <!--  Header  -->
+            <Border CornerRadius="{DynamicResource ControlCornerRadius}">
 
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="0.2*" MinWidth="80" />
+                    </Grid.ColumnDefinitions>
+
+                    <DockPanel>
+                        <ui:FontIcon
+                            Height="40"
+                            HorizontalAlignment="Center"
+                            FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                            Glyph="&#xEBC0;" />
+
+                        <ui:SimpleStackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="Use Power Profile Settings" />
+                            <DockPanel>
+                                <TextBlock
+                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="Seperated Plugged in and Battery Profile"
+                                    TextWrapping="Wrap" />
+                            </DockPanel>
+                        </ui:SimpleStackPanel>
+                    </DockPanel>
+
+                    <ui:ToggleSwitch
+                        Name="PowerProfilesToggle"
+                        Grid.Column="1"
+                        HorizontalAlignment="Right"
+                        Style="{DynamicResource InvertedToggleSwitchStyle}"
+                        Toggled="PowerProfilesToggle_Toggled" />
+                </Grid>
+            </Border>
+        </Grid>
         <Separator Background="{DynamicResource ExpanderHeaderBackground}" />
+        <Grid Visibility="{Binding ElementName=PowerProfilesToggle, Path=IsOn, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ToggleButton 
+                HorizontalAlignment="Stretch" 
+                Margin="5"
+                Click="navPowerProfilebtn_Click"
+                Name="navPowerbtn"
+                IsChecked="{Binding ElementName=navBatterybtn, Path=IsChecked, Converter={StaticResource InvertBooleanConverter}}">
+                <ToggleButton.Content>
+                    <DockPanel>
+                        <ui:FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEBB5;" />
+                        <TextBlock Text="Plugged In" Margin="8,0,0,0"/>
+                    </DockPanel>
+                </ToggleButton.Content>
+            </ToggleButton>
+
+            <ToggleButton 
+                Grid.Column="1" 
+                HorizontalAlignment="Stretch" 
+                Margin="5"
+                Click="navPowerProfilebtn_Click"
+                Name="navBatterybtn">
+                <ToggleButton.Content>
+                    <DockPanel>
+                        <ui:FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEBA6;" />
+                        <TextBlock Text="On Battery"  Margin="8,0,0,0"/>
+                    </DockPanel>
+                </ToggleButton.Content>
+            </ToggleButton>
+        </Grid>
 
         <ui:SimpleStackPanel Name="GridProfile" Spacing="10">
 
@@ -105,7 +178,6 @@
                 </Expander.Header>
 
                 <ui:SimpleStackPanel Spacing="6">
-
                     <!--  Maximum CPU Count  -->
                     <ui:SimpleStackPanel Name="StackProfileCPUCore" Spacing="6">
                         <Grid>
@@ -231,66 +303,6 @@
                                     TickPlacement="BottomRight"
                                     ValueChanged="TDPSlider_ValueChanged" />
                             </DockPanel>
-
-                        <!--  TDP On Battery Limit  -->
-                            <Grid Margin="0,8,0,0" d:Visibility="Visible" Visibility="{Binding ElementName=TDPToggle, Path=IsOn, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <DockPanel>
-                                    <ui:FontIcon
-                                        Height="40"
-                                        HorizontalAlignment="Center"
-                                        FontFamily="{DynamicResource SymbolThemeFontFamily}"
-                                        Glyph="&#xEBA9;" />
-
-                                    <ui:SimpleStackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Static resx:Resources.ProfilesPage_TDPOnBattery}" />
-                                        <TextBlock
-                                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                            Text="{x:Static resx:Resources.ProfilesPage_TDPOnBatteryDesc}"
-                                            TextWrapping="Wrap" />
-                                    </ui:SimpleStackPanel>
-                                </DockPanel>
-
-                                <ui:ToggleSwitch
-                                    Name="TDPOnBatteryToggle"
-                                    Grid.Column="1"
-                                    HorizontalAlignment="Right"
-                                    Style="{DynamicResource InvertedToggleSwitchStyle}" 
-                                    Toggled="TDPOnBatteryToggle_Toggled"/>
-                            </Grid>
-
-                            <StackPanel d:Visibility="Visible" Visibility="{Binding ElementName=TDPOnBatteryToggle, Path=IsOn, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <TextBlock
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    Text="{x:Static resx:Resources.QuickProfilesPage_PowerLimitTarget}" />
-                                <DockPanel Margin="8,0,0,0" ScrollViewer.PanningMode="HorizontalOnly">
-                                    <TextBlock
-                                        Width="35"
-                                        VerticalAlignment="Center"
-                                        Text="{Binding Value, StringFormat=N0, ElementName=TDPOnBatterySlider, Mode=OneWay}"
-                                        TextAlignment="Center" />
-                                    <TextBlock
-                                        Width="30"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Center"
-                                        Text="{x:Static resx:Resources.QuickPerformancePage_TDPUnitWatt}" />
-                                    <Slider
-                                        x:Name="TDPOnBatterySlider"
-                                        Margin="8,0,0,0"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Center"
-                                        AutoToolTipPrecision="0"
-                                        IsMoveToPointEnabled="True"
-                                        IsSnapToTickEnabled="True"
-                                        LargeChange="5"
-                                        SmallChange="1"
-                                        Style="{DynamicResource SliderStyle1}"
-                                        TickFrequency="1"
-                                        TickPlacement="BottomRight"
-                                        ValueChanged="TDPOnBatterySlider_ValueChanged" />
-                                </DockPanel>
-                            </StackPanel>
                         </StackPanel>
                     </ui:SimpleStackPanel>
                     <Separator Background="{DynamicResource ExpanderHeaderBackground}" />

@@ -123,8 +123,6 @@ public partial class Profile : ICloneable, IComparable
     // power
     public bool TDPOverrideEnabled { get; set; }
     public double[] TDPOverrideValues { get; set; }
-    public bool TDPOnBatteryEnabled { get; set; }
-    public double[] TDPOnBatteryValues { get; set; }
 
     public bool GPUOverrideEnabled { get; set; }
     public double GPUOverrideValue { get; set; }
@@ -143,6 +141,28 @@ public partial class Profile : ICloneable, IComparable
 
     public bool CPUCoreEnabled { get; set; }
     public int CPUCoreCount { get; set; } = Environment.ProcessorCount;
+
+    public bool PowerProfilesEnabled { get; set; }
+    public bool TDPOverrideEnabled_OnBattery { get; set; }
+    public double[] TDPOverrideValues_OnBattery { get; set; }
+
+    public bool GPUOverrideEnabled_OnBattery { get; set; }
+    public double GPUOverrideValue_OnBattery { get; set; }
+
+    public bool AutoTDPEnabled_OnBattery { get; set; }
+    public float AutoTDPRequestedFPS_OnBattery { get; set; } = 30.0f;
+
+    public bool FramerateEnabled_OnBattery { get; set; }
+    public int FramerateValue_OnBattery { get; set; } = 0;
+
+    public bool EPPOverrideEnabled_OnBattery { get; set; }
+    public uint EPPOverrideValue_OnBattery { get; set; } = 50;
+
+    public bool RSREnabled_OnBattery { get; set; }
+    public int RSRSharpness_OnBattery { get; set; } = 20;
+
+    public bool CPUCoreEnabled_OnBattery { get; set; }
+    public int CPUCoreCount_OnBattery { get; set; } = Environment.ProcessorCount;
 
     public object Clone()
     {
