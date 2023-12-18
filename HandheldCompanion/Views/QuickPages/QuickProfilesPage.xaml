@@ -144,7 +144,7 @@
             <ToggleButton 
                 HorizontalAlignment="Stretch" 
                 Margin="5"
-                Click="navPowerProfilebtn_Click"
+                Checked="navPowerProfilebtn_Click"
                 Name="navPowerbtn"
                 IsChecked="{Binding ElementName=navBatterybtn, Path=IsChecked, Converter={StaticResource InvertBooleanConverter}}">
                 <ToggleButton.Content>
@@ -159,7 +159,7 @@
                 Grid.Column="1" 
                 HorizontalAlignment="Stretch" 
                 Margin="5"
-                Click="navPowerProfilebtn_Click"
+                Checked="navPowerProfilebtn_Click"
                 Name="navBatterybtn">
                 <ToggleButton.Content>
                     <DockPanel>
