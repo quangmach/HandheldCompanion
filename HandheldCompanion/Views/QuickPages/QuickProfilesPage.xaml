@@ -115,12 +115,12 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 Style="{StaticResource BodyTextBlockStyle}"
-                                Text="Use Power Profile Settings" />
+                                Text="{x:Static resx:Resources.ProfilesPage_EnablePowerProfile}" />
                             <DockPanel>
                                 <TextBlock
                                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                                     Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="Seperated Plugged in and Battery Profile"
+                                    Text="{x:Static resx:Resources.ProfilesPage_EnablePowerProfileDesc}"
                                     TextWrapping="Wrap" />
                             </DockPanel>
                         </ui:SimpleStackPanel>
@@ -144,13 +144,13 @@
             <ToggleButton 
                 HorizontalAlignment="Stretch" 
                 Margin="5"
-                Checked="navPowerProfilebtn_Click"
+                Checked="navPowerbtn_Checked"
                 Name="navPowerbtn"
                 IsChecked="{Binding ElementName=navBatterybtn, Path=IsChecked, Converter={StaticResource InvertBooleanConverter}}">
                 <ToggleButton.Content>
                     <DockPanel>
                         <ui:FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEBB5;" />
-                        <TextBlock Text="Plugged In" Margin="8,0,0,0"/>
+                        <TextBlock Text="{x:Static resx:Resources.ProfilesPage_PluggedInBtn}" Margin="8,0,0,0"/>
                     </DockPanel>
                 </ToggleButton.Content>
             </ToggleButton>
@@ -159,12 +159,12 @@
                 Grid.Column="1" 
                 HorizontalAlignment="Stretch" 
                 Margin="5"
-                Checked="navPowerProfilebtn_Click"
+                Checked="navPowerbtn_Checked"
                 Name="navBatterybtn">
                 <ToggleButton.Content>
                     <DockPanel>
                         <ui:FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEBA6;" />
-                        <TextBlock Text="On Battery"  Margin="8,0,0,0"/>
+                        <TextBlock Text="{x:Static resx:Resources.ProfilesPage_BatteryBtn}"  Margin="8,0,0,0"/>
                     </DockPanel>
                 </ToggleButton.Content>
             </ToggleButton>

@@ -228,12 +228,81 @@
                                 Toggled="Toggle_EnableProfile_Toggled" />
                         </Grid>
                     </Border>
-                </ui:SimpleStackPanel>
+                    <!--  Enable power profile  -->
+                    <Border
+                        Padding="15,12,12,12"
+                        Background="{DynamicResource ExpanderHeaderBackground}"
+                        CornerRadius="{DynamicResource ControlCornerRadius}">
+                        <ui:SimpleStackPanel Spacing="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="9*" MinWidth="200" />
+                                    <ColumnDefinition MinWidth="200" />
+                                </Grid.ColumnDefinitions>
 
+                                <DockPanel>
+                                    <ui:FontIcon
+                                        Height="40"
+                                        HorizontalAlignment="Center"
+                                        FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                                        Glyph="&#xE7EE;" />
+
+                                    <ui:SimpleStackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Static resx:Resources.ProfilesPage_EnablePowerProfile}" />
+                                        <TextBlock
+                                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Text="{x:Static resx:Resources.ProfilesPage_EnablePowerProfileDesc}"
+                                            TextWrapping="Wrap" />
+                                    </ui:SimpleStackPanel>
+                                </DockPanel>
+
+                                <ui:ToggleSwitch
+                                    Name="Toggle_EnablePowerProfile"
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Right"
+                                    Style="{DynamicResource InvertedToggleSwitchStyle}"
+                                    Toggled="Toggle_EnablePowerProfile_Toggled" />
+                            </Grid>
+                            <Grid Visibility="{Binding ElementName=PowerProfilesToggle, Path=IsOn, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ToggleButton 
+                                Name="navPowerbtn"
+                                HorizontalAlignment="Stretch" 
+                                Margin="5"
+                                Checked="navPowerbtn_Checked" 
+                                IsChecked="{Binding ElementName=navBatterybtn, Path=IsChecked, Converter={StaticResource InvertBooleanConverter}}">
+                                    <ToggleButton.Content>
+                                        <DockPanel>
+                                            <ui:FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEBB5;" />
+                                            <TextBlock Text="{x:Static resx:Resources.ProfilesPage_PluggedInBtn}" Margin="8,0,0,0"/>
+                                        </DockPanel>
+                                    </ToggleButton.Content>
+                                </ToggleButton>
+
+                                <ToggleButton 
+                                Name="navBatterybtn"
+                                Grid.Column="1" 
+                                HorizontalAlignment="Stretch" 
+                                Margin="5"
+                                Checked="navPowerbtn_Checked">
+                                    <ToggleButton.Content>
+                                        <DockPanel>
+                                            <ui:FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xEBA6;" />
+                                            <TextBlock Text="{x:Static resx:Resources.ProfilesPage_BatteryBtn}"  Margin="8,0,0,0"/>
+                                        </DockPanel>
+                                    </ToggleButton.Content>
+                                </ToggleButton>
+                            </Grid>
+                        </ui:SimpleStackPanel>
+                    </Border>
+                </ui:SimpleStackPanel>
                 <!--  Profile settings  -->
                 <ui:SimpleStackPanel Spacing="6">
                     <TextBlock Style="{StaticResource BaseTextBlockStyle}" Text="{x:Static resx:Resources.ProfilesPage_ProfileSettings}" />
-
                     <!--  Global settings  -->
                     <Expander
                         Name="GlobalSettings"

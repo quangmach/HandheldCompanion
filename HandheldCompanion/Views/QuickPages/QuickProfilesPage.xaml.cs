@@ -604,86 +604,6 @@ public partial class QuickProfilesPage : Page
 
         RequestUpdate();
     }
-    private void PowerProfilesToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (currentProfile is null)
-            return;
-
-        if (updateLock)
-            return;
-
-        //Revert to Default Page when Power Profiles Off
-        if (!PowerProfilesToggle.IsOn) navPowerbtn.IsChecked = true;
-        currentProfile.PowerProfilesEnabled = PowerProfilesToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void TDPToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (currentProfile is null)
-            return;
-
-        if (updateLock)
-            return;
-
-        if(IsOnBatteryPage) currentProfile.TDPOverrideEnabled_OnBattery = TDPToggle.IsOn;
-        currentProfile.TDPOverrideEnabled = TDPToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void TDPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (currentProfile is null)
-            return;
-
-        if (updateLock)
-            return;
-
-        var TDPOverrideValues = new double[3]
-        {
-                (int)TDPSlider.Value,
-                (int)TDPSlider.Value,
-                (int)TDPSlider.Value
-        };
-
-        if (IsOnBatteryPage) currentProfile.TDPOverrideValues_OnBattery = TDPOverrideValues;
-        else currentProfile.TDPOverrideValues = TDPOverrideValues;
-        RequestUpdate();
-    }
-
-    private void AutoTDPToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (currentProfile is null)
-            return;
-
-        if (updateLock)
-            return;
-
-        if (IsOnBatteryPage)
-        {
-            currentProfile.AutoTDPEnabled_OnBattery = AutoTDPToggle.IsOn;
-            AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS_OnBattery;
-        }
-        else 
-        {
-            currentProfile.AutoTDPEnabled = AutoTDPToggle.IsOn;
-            AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS;
-        }
-        RequestUpdate();
-    }
-
-    private void AutoTDPRequestedFPSSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (currentProfile is null)
-            return;
-
-        if (updateLock)
-            return;
-
-        if (IsOnBatteryPage) currentProfile.AutoTDPRequestedFPS_OnBattery = (int)AutoTDPRequestedFPSSlider.Value;
-        else currentProfile.AutoTDPRequestedFPS = (int)AutoTDPRequestedFPSSlider.Value;
-        RequestUpdate();
-    }
 
     private void SliderUMCAntiDeadzone_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
@@ -795,7 +715,86 @@ public partial class QuickProfilesPage : Page
         ((GyroActions)currentAction).MotionMode = (MotionMode)cB_UMC_MotionDefaultOffOn.SelectedIndex;
         RequestUpdate();
     }
+    private void PowerProfilesToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (currentProfile is null)
+            return;
 
+        if (updateLock)
+            return;
+
+        //Revert to Default Page when Power Profiles Off
+        if (!PowerProfilesToggle.IsOn) navPowerbtn.IsChecked = true;
+        currentProfile.PowerProfilesEnabled = PowerProfilesToggle.IsOn;
+        RequestUpdate();
+    }
+
+    private void TDPToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (currentProfile is null)
+            return;
+
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) currentProfile.TDPOverrideEnabled_OnBattery = TDPToggle.IsOn;
+        currentProfile.TDPOverrideEnabled = TDPToggle.IsOn;
+        RequestUpdate();
+    }
+
+    private void TDPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (currentProfile is null)
+            return;
+
+        if (updateLock)
+            return;
+
+        var TDPOverrideValues = new double[3]
+        {
+                (int)TDPSlider.Value,
+                (int)TDPSlider.Value,
+                (int)TDPSlider.Value
+        };
+
+        if (IsOnBatteryPage) currentProfile.TDPOverrideValues_OnBattery = TDPOverrideValues;
+        else currentProfile.TDPOverrideValues = TDPOverrideValues;
+        RequestUpdate();
+    }
+
+    private void AutoTDPToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (currentProfile is null)
+            return;
+
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage)
+        {
+            currentProfile.AutoTDPEnabled_OnBattery = AutoTDPToggle.IsOn;
+            AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS_OnBattery;
+        }
+        else
+        {
+            currentProfile.AutoTDPEnabled = AutoTDPToggle.IsOn;
+            AutoTDPRequestedFPSSlider.Value = currentProfile.AutoTDPRequestedFPS;
+        }
+        RequestUpdate();
+    }
+
+    private void AutoTDPRequestedFPSSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (currentProfile is null)
+            return;
+
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) currentProfile.AutoTDPRequestedFPS_OnBattery = (int)AutoTDPRequestedFPSSlider.Value;
+        else currentProfile.AutoTDPRequestedFPS = (int)AutoTDPRequestedFPSSlider.Value;
+        RequestUpdate();
+    }
     private void GPUToggle_Toggled(object sender, RoutedEventArgs e)
     {
         if (currentProfile is null)
@@ -991,8 +990,9 @@ public partial class QuickProfilesPage : Page
         else navPowerbtn.IsChecked = true;
     }
 
-    private void navPowerProfilebtn_Click(object sender, RoutedEventArgs e)
+    private void navPowerbtn_Checked(object sender, RoutedEventArgs e)
     {
-        ProfileManager.UpdateOrCreateProfile(currentProfile);
+        //ProfileManager.UpdateOrCreateProfile(currentProfile);
+        RequestUpdate();
     }
 }

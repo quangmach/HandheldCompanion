@@ -2363,4 +2363,16 @@ with motion input enabled, use selected button(s) to disable motion.</value>
   <data name="ProfilesPage_TDPOnBatteryDesc" xml:space="preserve">
     <value>Using seperated TDP settings when On Battery</value>
   </data>
+  <data name="ProfilesPage_BatteryBtn" xml:space="preserve">
+    <value>On Battery</value>
+  </data>
+  <data name="ProfilesPage_EnablePowerProfile" xml:space="preserve">
+    <value>Use Power Profile Settings</value>
+  </data>
+  <data name="ProfilesPage_EnablePowerProfileDesc" xml:space="preserve">
+    <value>Seperated Plugged in and Battery Profile</value>
+  </data>
+  <data name="ProfilesPage_PluggedInBtn" xml:space="preserve">
+    <value>Plugged In</value>
+  </data>
 </root>

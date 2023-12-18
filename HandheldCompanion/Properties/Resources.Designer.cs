@@ -4474,6 +4474,15 @@ namespace HandheldCompanion.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to On Battery.
+        /// </summary>
+        public static string ProfilesPage_BatteryBtn {
+            get {
+                return ResourceManager.GetString("ProfilesPage_BatteryBtn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Boost power limit.
         /// </summary>
         public static string ProfilesPage_BoostPower {
@@ -4569,6 +4578,24 @@ namespace HandheldCompanion.Properties {
         public static string ProfilesPage_DeleteProfile {
             get {
                 return ResourceManager.GetString("ProfilesPage_DeleteProfile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use Power Profile Settings.
+        /// </summary>
+        public static string ProfilesPage_EnablePowerProfile {
+            get {
+                return ResourceManager.GetString("ProfilesPage_EnablePowerProfile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Seperated Plugged in and Battery Profile.
+        /// </summary>
+        public static string ProfilesPage_EnablePowerProfileDesc {
+            get {
+                return ResourceManager.GetString("ProfilesPage_EnablePowerProfileDesc", resourceCulture);
             }
         }
         
@@ -4794,6 +4821,15 @@ namespace HandheldCompanion.Properties {
         public static string ProfilesPage_OK {
             get {
                 return ResourceManager.GetString("ProfilesPage_OK", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Plugged In.
+        /// </summary>
+        public static string ProfilesPage_PluggedInBtn {
+            get {
+                return ResourceManager.GetString("ProfilesPage_PluggedInBtn", resourceCulture);
             }
         }
         

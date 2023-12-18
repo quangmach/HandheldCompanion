@@ -29,6 +29,7 @@ public partial class ProfilesPage : Page
 {
     // when set on start cannot be null anymore
     public static Profile selectedProfile;
+    private bool IsOnBatteryPage;
 
     private readonly SettingsMode0 page0 = new("SettingsMode0");
     private readonly SettingsMode1 page1 = new("SettingsMode1");
@@ -56,6 +57,7 @@ public partial class ProfilesPage : Page
         ProfileManager.Applied += ProfileApplied;
 
         ProfileManager.Initialized += ProfileManagerLoaded;
+        this.IsVisibleChanged += OnVisibleChanged;
 
         SettingsManager.SettingValueChanged += SettingsManager_SettingValueChanged;
 
@@ -390,40 +392,82 @@ public partial class ProfilesPage : Page
 
                 UpdateMotionControlsVisibility();
 
-                // Sustained TDP settings (slow, stapm, long)
-                TDPToggle.IsOn = selectedProfile.TDPOverrideEnabled;
-                var TDP = selectedProfile.TDPOverrideValues is not null
-                    ? selectedProfile.TDPOverrideValues
-                    : MainWindow.CurrentDevice.nTDP;
-                TDPSlider.Value = TDP[(int)PowerType.Slow];
+                Toggle_EnablePowerProfile.IsOn = selectedProfile.PowerProfilesEnabled;
+                // Check If Use Separated Power Profiles & On Battery Page Settings
+                IsOnBatteryPage = navBatterybtn.IsChecked == true && Toggle_EnablePowerProfile.IsOn;
 
                 // define slider(s) min and max values based on device specifications
                 TDPSlider.Minimum = SettingsManager.GetInt("ConfigurableTDPOverrideDown");
                 TDPSlider.Maximum = SettingsManager.GetInt("ConfigurableTDPOverrideUp");
 
-                // Automatic TDP
-                AutoTDPToggle.IsOn = selectedProfile.AutoTDPEnabled;
-                AutoTDPSlider.Value = (int)selectedProfile.AutoTDPRequestedFPS;
+                // If On Plugged In Settings Page
+                if (!IsOnBatteryPage)
+                {
+                    // Sustained TDP settings (slow, stapm, long)
+                    TDPToggle.IsOn = selectedProfile.TDPOverrideEnabled;
+                    var TDP = selectedProfile.TDPOverrideValues is not null
+                        ? selectedProfile.TDPOverrideValues
+                        : MainWindow.CurrentDevice.nTDP;
+                    TDPSlider.Value = TDP[(int)PowerType.Slow];
 
-                // EPP
-                EPPToggle.IsOn = selectedProfile.EPPOverrideEnabled;
-                EPPSlider.Value = selectedProfile.EPPOverrideValue;
+                    // GPU
+                    GPUToggle.IsOn = selectedProfile.GPUOverrideEnabled;
+                    GPUSlider.Value = selectedProfile.GPUOverrideValue != 0 ? selectedProfile.GPUOverrideValue : 255 * 50;
 
-                // RSR
-                RSRToggle.IsOn = selectedProfile.RSREnabled;
-                RSRSlider.Value = selectedProfile.RSRSharpness;
+                    // Framerate
+                    FramerateToggle.IsOn = selectedProfile.FramerateEnabled;
+                    FramerateSlider.Value = selectedProfile.FramerateValue;
 
-                // CPU Core Count
-                CPUCoreToggle.IsOn = selectedProfile.CPUCoreEnabled;
-                CPUCoreSlider.Value = selectedProfile.CPUCoreCount;
+                    // AutoTDP
+                    AutoTDPToggle.IsOn = selectedProfile.AutoTDPEnabled;
+                    AutoTDPSlider.Value = selectedProfile.AutoTDPRequestedFPS;
 
-                // GPU Clock control
-                GPUToggle.IsOn = selectedProfile.GPUOverrideEnabled;
-                GPUSlider.Value = selectedProfile.GPUOverrideValue != 0 ? selectedProfile.GPUOverrideValue : 255 * 50;
+                    // EPP
+                    EPPToggle.IsOn = selectedProfile.EPPOverrideEnabled;
+                    EPPSlider.Value = selectedProfile.EPPOverrideValue;
 
-                // Framerate limit
-                FramerateToggle.IsOn = selectedProfile.FramerateEnabled;
-                FramerateSlider.Value = selectedProfile.FramerateValue;
+                    // RSR
+                    RSRToggle.IsOn = selectedProfile.RSREnabled;
+                    RSRSlider.Value = selectedProfile.RSRSharpness;
+
+                    // CPU Core Count
+                    CPUCoreToggle.IsOn = selectedProfile.CPUCoreEnabled;
+                    CPUCoreSlider.Value = selectedProfile.CPUCoreCount;
+                }
+                // On Battery Settings Page
+                else
+                {
+                    // Sustained TDP settings (slow, stapm, long)
+                    TDPToggle.IsOn = selectedProfile.TDPOverrideEnabled_OnBattery;
+                    var TDP = selectedProfile.TDPOverrideValues_OnBattery is not null
+                        ? selectedProfile.TDPOverrideValues_OnBattery
+                        : MainWindow.CurrentDevice.nTDP;
+                    TDPSlider.Value = TDP[(int)PowerType.Slow];
+
+                    // GPU
+                    GPUToggle.IsOn = selectedProfile.GPUOverrideEnabled_OnBattery;
+                    GPUSlider.Value = selectedProfile.GPUOverrideValue_OnBattery != 0 ? selectedProfile.GPUOverrideValue_OnBattery : 255 * 50;
+
+                    // Framerate
+                    FramerateToggle.IsOn = selectedProfile.FramerateEnabled_OnBattery;
+                    FramerateSlider.Value = selectedProfile.FramerateValue_OnBattery;
+
+                    // AutoTDP
+                    AutoTDPToggle.IsOn = selectedProfile.AutoTDPEnabled_OnBattery;
+                    AutoTDPSlider.Value = selectedProfile.AutoTDPRequestedFPS_OnBattery;
+
+                    // EPP
+                    EPPToggle.IsOn = selectedProfile.EPPOverrideEnabled_OnBattery;
+                    EPPSlider.Value = selectedProfile.EPPOverrideValue_OnBattery;
+
+                    // RSR
+                    RSRToggle.IsOn = selectedProfile.RSREnabled_OnBattery;
+                    RSRSlider.Value = selectedProfile.RSRSharpness_OnBattery;
+
+                    // CPU Core Count
+                    CPUCoreToggle.IsOn = selectedProfile.CPUCoreEnabled_OnBattery;
+                    CPUCoreSlider.Value = selectedProfile.CPUCoreCount_OnBattery;
+                }
 
                 // Layout settings
                 Toggle_ControllerLayout.IsOn = selectedProfile.LayoutEnabled;
@@ -534,152 +578,6 @@ public partial class ProfilesPage : Page
         ((Expander)sender).BringIntoView();
     }
 
-    private void Toggle_EnableProfile_Toggled(object sender, RoutedEventArgs e)
-    {
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.Enabled = Toggle_EnableProfile.IsOn;
-        RequestUpdate();
-    }
-
-    private void TDPToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.TDPOverrideEnabled = TDPToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void TDPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (!TDPSlider.IsInitialized)
-            return;
-
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.TDPOverrideValues = new double[3]
-        {
-            (int)TDPSlider.Value,
-            (int)TDPSlider.Value,
-            (int)TDPSlider.Value
-        };
-        RequestUpdate();
-    }
-
-    private void FramerateToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        // UI thread (async)
-        Application.Current.Dispatcher.BeginInvoke(() =>
-        {
-            if (FramerateToggle.IsOn)
-            {
-                FramerateSlider_ValueChanged(null, null);
-            }
-            else
-            {
-                foreach (Control control in FramerateModeGrid.Children)
-                {
-                    if (control.GetType() != typeof(Label))
-                        continue;
-
-                    control.SetResourceReference(Control.ForegroundProperty, "SystemControlForegroundBaseMediumBrush");
-                }
-            }
-        });
-
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.FramerateEnabled = FramerateToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void FramerateSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        // UI thread (async)
-        Application.Current.Dispatcher.BeginInvoke(() =>
-        {
-            var value = (int)FramerateSlider.Value;
-
-            foreach (Control control in FramerateModeGrid.Children)
-            {
-                if (control.GetType() != typeof(Label))
-                    continue;
-
-                control.SetResourceReference(Control.ForegroundProperty, "SystemControlForegroundBaseMediumBrush");
-            }
-
-            Label Label = (Label)FramerateModeGrid.Children[value];
-            Label.SetResourceReference(Control.ForegroundProperty, "AccentButtonBackground");
-        });
-
-        if (!FramerateSlider.IsInitialized)
-            return;
-
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.FramerateValue = (int)FramerateSlider.Value;
-        RequestUpdate();
-    }
-
-    private void AutoTDPToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.AutoTDPEnabled = AutoTDPToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void AutoTDPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (!AutoTDPSlider.IsInitialized)
-            return;
-
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.AutoTDPRequestedFPS = (int)AutoTDPSlider.Value;
-        RequestUpdate();
-    }
-
-    private void GPUToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.GPUOverrideEnabled = GPUToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void GPUSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (!GPUSlider.IsInitialized)
-            return;
-
-        if (selectedProfile is null)
-            return;
-
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.GPUOverrideValue = (int)GPUSlider.Value;
-        RequestUpdate();
-    }
-
     private void ControllerSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         // prepare layout editor
@@ -710,30 +608,6 @@ public partial class ProfilesPage : Page
 
         RequestUpdate();
     }
-
-    private void EPPToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.EPPOverrideEnabled = EPPToggle.IsOn;
-        RequestUpdate();
-    }
-
-    private void EPPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (!EPPSlider.IsInitialized)
-            return;
-
-        // wait until lock is released
-        if (updateLock)
-            return;
-
-        selectedProfile.EPPOverrideValue = (uint)EPPSlider.Value;
-        RequestUpdate();
-    }
-
     #region UI
 
     private void ProfileApplied(Profile profile, ProfileUpdateSource source)
@@ -903,14 +777,210 @@ public partial class ProfilesPage : Page
 
         ProfileManager.UpdateOrCreateProfile(selectedProfile, source);
     }
+    private void Toggle_EnableProfile_Toggled(object sender, RoutedEventArgs e)
+    {
+        // wait until lock is released
+        if (updateLock)
+            return;
 
+        selectedProfile.Enabled = Toggle_EnableProfile.IsOn;
+        RequestUpdate();
+    }
+    private void Toggle_EnablePowerProfile_Toggled(object sender, RoutedEventArgs e)
+    {
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        //Revert to Default Page when Power Profiles Off
+        if (!Toggle_EnablePowerProfile.IsOn) navPowerbtn.IsChecked = true;
+        selectedProfile.PowerProfilesEnabled = Toggle_EnablePowerProfile.IsOn;
+        RequestUpdate();
+    }
+    private void TDPToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) selectedProfile.TDPOverrideEnabled_OnBattery = TDPToggle.IsOn;
+        selectedProfile.TDPOverrideEnabled = TDPToggle.IsOn;
+        RequestUpdate();
+    }
+
+    private void TDPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!TDPSlider.IsInitialized)
+            return;
+
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        var TDPOverrideValues = new double[3]
+        {
+                (int)TDPSlider.Value,
+                (int)TDPSlider.Value,
+                (int)TDPSlider.Value
+        };
+
+        if (IsOnBatteryPage) selectedProfile.TDPOverrideValues_OnBattery = TDPOverrideValues;
+        else selectedProfile.TDPOverrideValues = TDPOverrideValues;
+        RequestUpdate();
+    }
+
+    private void FramerateToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        // UI thread (async)
+        Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            if (FramerateToggle.IsOn)
+            {
+                FramerateSlider_ValueChanged(null, null);
+            }
+            else
+            {
+                foreach (Control control in FramerateModeGrid.Children)
+                {
+                    if (control.GetType() != typeof(Label))
+                        continue;
+
+                    control.SetResourceReference(Control.ForegroundProperty, "SystemControlForegroundBaseMediumBrush");
+                }
+            }
+        });
+
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) selectedProfile.FramerateEnabled_OnBattery = FramerateToggle.IsOn;
+        else selectedProfile.FramerateEnabled = FramerateToggle.IsOn;
+        RequestUpdate();
+    }
+
+    private void FramerateSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        // UI thread (async)
+        Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            var value = (int)FramerateSlider.Value;
+
+            foreach (Control control in FramerateModeGrid.Children)
+            {
+                if (control.GetType() != typeof(Label))
+                    continue;
+
+                control.SetResourceReference(Control.ForegroundProperty, "SystemControlForegroundBaseMediumBrush");
+            }
+
+            Label Label = (Label)FramerateModeGrid.Children[value];
+            Label.SetResourceReference(Control.ForegroundProperty, "AccentButtonBackground");
+        });
+
+        if (!FramerateSlider.IsInitialized)
+            return;
+
+        // wait until lock is released
+        if (updateLock)
+            return;
+        if (IsOnBatteryPage) selectedProfile.FramerateValue_OnBattery = (int)FramerateSlider.Value;
+        else selectedProfile.FramerateValue = (int)FramerateSlider.Value;
+        RequestUpdate();
+    }
+
+    private void AutoTDPToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage)
+        {
+            selectedProfile.AutoTDPEnabled_OnBattery = AutoTDPToggle.IsOn;
+            AutoTDPSlider.Value = selectedProfile.AutoTDPRequestedFPS_OnBattery;
+        }
+        else
+        {
+            selectedProfile.AutoTDPEnabled = AutoTDPToggle.IsOn;
+            AutoTDPSlider.Value = selectedProfile.AutoTDPRequestedFPS;
+        }
+        RequestUpdate();
+    }
+
+    private void AutoTDPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!AutoTDPSlider.IsInitialized)
+            return;
+
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) selectedProfile.AutoTDPRequestedFPS_OnBattery = (int)AutoTDPSlider.Value;
+        else selectedProfile.AutoTDPRequestedFPS = (int)AutoTDPSlider.Value;
+        RequestUpdate();
+    }
+
+    private void GPUToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) selectedProfile.GPUOverrideEnabled_OnBattery = GPUToggle.IsOn;
+        else selectedProfile.GPUOverrideEnabled = GPUToggle.IsOn;
+        RequestUpdate();
+    }
+
+    private void GPUSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!GPUSlider.IsInitialized)
+            return;
+
+        if (selectedProfile is null)
+            return;
+
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) selectedProfile.GPUOverrideValue_OnBattery = (int)GPUSlider.Value;
+        else selectedProfile.GPUOverrideValue = (int)GPUSlider.Value;
+        RequestUpdate();
+    }
+    private void EPPToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) selectedProfile.EPPOverrideEnabled_OnBattery = EPPToggle.IsOn;
+        else selectedProfile.EPPOverrideEnabled = EPPToggle.IsOn;
+        RequestUpdate();
+    }
+
+    private void EPPSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!EPPSlider.IsInitialized)
+            return;
+
+        // wait until lock is released
+        if (updateLock)
+            return;
+
+        if (IsOnBatteryPage) selectedProfile.EPPOverrideValue_OnBattery = (uint)EPPSlider.Value;
+        else selectedProfile.EPPOverrideValue = (uint)EPPSlider.Value;
+        RequestUpdate();
+    }
     private void RSRToggle_Toggled(object sender, RoutedEventArgs e)
     {
         // wait until lock is released
         if (updateLock)
             return;
 
-        selectedProfile.RSREnabled = RSRToggle.IsOn;
+        if (IsOnBatteryPage) selectedProfile.RSREnabled_OnBattery = RSRToggle.IsOn;
+        else selectedProfile.RSREnabled = RSRToggle.IsOn;
         RequestUpdate();
     }
 
@@ -923,7 +993,8 @@ public partial class ProfilesPage : Page
         if (updateLock)
             return;
 
-        selectedProfile.RSRSharpness = (int)RSRSlider.Value;
+        if (IsOnBatteryPage) selectedProfile.RSRSharpness_OnBattery = (int)RSRSlider.Value;
+        else selectedProfile.RSRSharpness = (int)RSRSlider.Value;
         RequestUpdate();
     }
 
@@ -933,7 +1004,8 @@ public partial class ProfilesPage : Page
         if (updateLock)
             return;
 
-        selectedProfile.CPUCoreEnabled = CPUCoreToggle.IsOn;
+        if (IsOnBatteryPage) selectedProfile.CPUCoreEnabled_OnBattery = CPUCoreToggle.IsOn;
+        else selectedProfile.CPUCoreEnabled = CPUCoreToggle.IsOn;
         RequestUpdate();
     }
 
@@ -946,7 +1018,20 @@ public partial class ProfilesPage : Page
         if (updateLock)
             return;
 
-        selectedProfile.CPUCoreCount = (int)CPUCoreSlider.Value;
+        if (IsOnBatteryPage) selectedProfile.CPUCoreCount_OnBattery = (int)CPUCoreSlider.Value;
+        else selectedProfile.CPUCoreCount = (int)CPUCoreSlider.Value;
+        RequestUpdate();
+    }
+
+    private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        // Select default page based on current Power Status
+        if (Toggle_EnablePowerProfile.IsOn && !PowerProfileStatus.isPluggedIn) navBatterybtn.IsChecked = true;
+        else navPowerbtn.IsChecked = true;
+    }
+
+    private void navPowerbtn_Checked(object sender, RoutedEventArgs e)
+    {
         RequestUpdate();
     }
 }
