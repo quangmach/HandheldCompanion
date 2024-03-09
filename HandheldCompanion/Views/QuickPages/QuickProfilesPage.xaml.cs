@@ -992,7 +992,11 @@ public partial class QuickProfilesPage : Page
 
     private void navPowerbtn_Checked(object sender, RoutedEventArgs e)
     {
-        //ProfileManager.UpdateOrCreateProfile(currentProfile);
-        RequestUpdate();
+        ProfileManager.UpdateOrCreateProfile(currentProfile);
+    }
+
+    private void AltAutoTDPToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        MainWindow.performanceManager.AltAutoTDP = AltAutoTDPToggle.IsOn;
     }
 }

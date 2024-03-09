@@ -3,6 +3,7 @@ using HandheldCompanion.Processors;
 using HandheldCompanion.Utils;
 using HandheldCompanion.Views;
 using HandheldCompanion.Views.Pages;
+using HandheldCompanion.Views.QuickPages;
 using Microsoft.Win32;
 using RTSSSharedMemoryNET;
 using System;
@@ -61,6 +62,8 @@ public class PerformanceManager : Manager
     private bool powerLock;
 
     // AutoTDP
+    public bool AltAutoTDP = true;
+    private bool AutoTDPActive = true; // Flag to indicate if AutoTDP is currently active
     private double AutoTDP;
     private double AutoTDPPrev;
     private bool AutoTDPFirstRun = true;
@@ -365,32 +368,68 @@ public class PerformanceManager : Manager
             // Ensure realistic process values, prevent divide by 0
             processValueFPS = Math.Clamp(processValueFPS, 5, 500);
 
-            // Determine error amount, include target, actual and dipper modifier
-            var controllerError = AutoTDPTargetFPS - processValueFPS - AutoTDPDipper(processValueFPS, AutoTDPTargetFPS);
+            var LowerFPSLimit = AutoTDPTargetFPS * 0.8 < 40 ? 40: AutoTDPTargetFPS*0.8;
+            var UpperFPSLimit = AutoTDPTargetFPS * 1.2;
 
-            // Clamp error amount corrected within a single cycle
-            // Adjust clamp if actual FPS is 2.5x requested FPS
-            double clampLowerLimit = processValueFPS >= 2.5 * AutoTDPTargetFPS ? -100 : -5;
-            controllerError = Math.Clamp(controllerError, clampLowerLimit, 15);
+            // Track previous FPS values for average calculation using a rolling array
+            Array.Copy(FPSHistory, 0, FPSHistory, 1, FPSHistory.Length - 1);
+            FPSHistory[0] = processValueFPS; // Add current FPS at the start
 
-            var TDPAdjustment = controllerError * AutoTDP / processValueFPS;
-            TDPAdjustment *= 0.9; // Always have a little undershoot
-
-            // Determine final setpoint
-            if (!AutoTDPFirstRun)
-                AutoTDP += TDPAdjustment + AutoTDPDamper(processValueFPS);
-            else
-                AutoTDPFirstRun = false;
-
-            AutoTDP = Math.Clamp(AutoTDP, TDPMin, AutoTDPMax);
-
-            // Only update if we have a different TDP value to set
-            if (AutoTDP != AutoTDPPrev)
+            if (AltAutoTDP)
             {
-                var values = new double[3] { AutoTDP, AutoTDP, AutoTDP };
-                RequestTDP(values, true);
+                if (processValueFPS < LowerFPSLimit && !AutoTDPActive)
+                {
+                    AutoTDPActive = true;
+                }
+                //If 3 sec avg FPS stay within Lower & Upper Limit range & current TDP <= Max AutoTDP set then disable AutoTDP
+                else if (FPSHistory.Take(3).Average() >= LowerFPSLimit && FPSHistory.Take(3).Average() <= UpperFPSLimit && AutoTDPActive && AutoTDP <= AutoTDPMax)
+                {
+                    AutoTDPActive = false;
+                }
             }
-            AutoTDPPrev = AutoTDP;
+            else AutoTDPActive = true;
+
+            if (AutoTDPActive)
+            {
+
+                // Determine error amount, include target, actual and dipper modifier
+                var controllerError = AutoTDPTargetFPS - processValueFPS - AutoTDPDipper(processValueFPS, AutoTDPTargetFPS);
+
+                // Clamp error amount corrected within a single cycle
+                // Adjust clamp if actual FPS is 2.5x requested FPS
+                double clampLowerLimit = processValueFPS >= 2.5 * AutoTDPTargetFPS ? -100 : -5;
+                controllerError = Math.Clamp(controllerError, clampLowerLimit, 15);
+
+                var TDPAdjustment = controllerError * AutoTDP / processValueFPS;
+                TDPAdjustment *= 0.9; // Always have a little undershoot
+
+                // Determine final setpoint
+                if (!AutoTDPFirstRun)
+                    AutoTDP += TDPAdjustment + AutoTDPDamper(processValueFPS);
+                else
+                    AutoTDPFirstRun = false;
+
+                AutoTDP = AltAutoTDP ? Math.Clamp(AutoTDP, TDPMin, TDPMax) : Math.Clamp(AutoTDP, TDPMin, AutoTDPMax);
+
+                // Only update if we have a different TDP value to set
+                if (AutoTDP != AutoTDPPrev)
+                {
+                    var values = new double[3] { AutoTDP, AutoTDP, AutoTDP };
+                    RequestTDP(values, true);
+                }
+                AutoTDPPrev = AutoTDP;
+            } 
+            else
+            {
+                AutoTDP = AutoTDPMax;
+                // Only update if we have a different TDP value to set
+                if (AutoTDP != AutoTDPPrev)
+                {
+                    var values = new double[3] { AutoTDP, AutoTDP, AutoTDP };
+                    RequestTDP(values, true);
+                }
+                AutoTDPPrev = AutoTDP;
+            }
 
             // LogManager.LogTrace("TDPSet;;;;;{0:0.0};{1:0.000};{2:0.0000};{3:0.0000};{4:0.0000}", AutoTDPTargetFPS, AutoTDP, TDPAdjustment, ProcessValueFPS, TDPDamping);
 
@@ -404,10 +443,6 @@ public class PerformanceManager : Manager
         // Dipper
         // Add small positive "error" if actual and target FPS are similar for a duration
         var Modifier = 0.0;
-
-        // Track previous FPS values for average calculation using a rolling array
-        Array.Copy(FPSHistory, 0, FPSHistory, 1, FPSHistory.Length - 1);
-        FPSHistory[0] = FPSActual; // Add current FPS at the start
 
         // Activate around target range of 1 FPS as games can fluctuate
         if (FPSSetpoint - 1 <= FPSActual && FPSActual <= FPSSetpoint + 1)
